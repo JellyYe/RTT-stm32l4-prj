@@ -60,6 +60,7 @@ void w25qxx_enter_qspi_mode(struct rt_qspi_device *device)
     }
 }
 
+/*将w25q128注册成块设备，才能使用elmfatfs进行文件操作*/
 static int rt_hw_qspi_flash_with_sfud_init(void)
 {
     stm32_qspi_bus_attach_device("qspi1", "qspi10", RT_NULL, 4, w25qxx_enter_qspi_mode, RT_NULL);
@@ -73,6 +74,7 @@ static int rt_hw_qspi_flash_with_sfud_init(void)
     return RT_EOK;
 }
 INIT_COMPONENT_EXPORT(rt_hw_qspi_flash_with_sfud_init);
+
 
 #if defined(RT_USING_DFS_ELMFAT) && !defined(BSP_USING_SDCARD)
 #include <dfs_fs.h>

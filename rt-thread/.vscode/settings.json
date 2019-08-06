@@ -4,6 +4,7 @@
         ".mpyproject.json": "jsonc"
     },
     "python.autoComplete.extraPaths": [
-        "C:\\Users\\Administrator\\.vscode\\extensions\\rt-thread.rt-thread-micropython-0.1.3\\code-completion"
+        "C:\\Users\\Administrator\\.vscode\\extensions\\rt-thread.rt-thread-micropython-0.1.3\\code-completion",
+        "C:\\Users\\Administrator\\.vscode\\extensions\\rt-thread.rt-thread-micropython-0.1.7\\code-completion"
     ]
 }

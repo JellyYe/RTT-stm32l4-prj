@@ -113,4 +113,4 @@ void key_int()
     //key
 }
 
-//INIT_BOARD_EXPORT(key_int);
+INIT_BOARD_EXPORT(key_int);

@@ -21,6 +21,7 @@ void led_init()
     rt_pin_write(PIN_LED_G, PIN_HIGH);
     rt_pin_write(PIN_LED_B, PIN_HIGH);
 } 
+INIT_COMPONENT_EXPORT(led_init);
 
 void led_on(rt_int8_t leddevice)
 {

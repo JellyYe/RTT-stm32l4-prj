@@ -60,6 +60,7 @@ int stm32_sdcard_mount(void)
 }
 INIT_APP_EXPORT(stm32_sdcard_mount);
 
+
 static int rt_hw_spi1_tfcard(void)
 {
     __HAL_RCC_GPIOC_CLK_ENABLE();

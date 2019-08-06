@@ -12,11 +12,13 @@
 #include <mylog.h>
 #include <rtdbg.h>
 #include <string.h>
+static struct rt_thread mylog_thread;
+
+//#ifdef MAILBOX
 static struct rt_mailbox mb;
 static char mb_pool[128];
 ALIGN(RT_ALIGN_SIZE)
 static char mylog_thread_stack[2048];
-static struct rt_thread mylog_thread;
 
 struct mb_data_send
 {
@@ -78,7 +80,7 @@ static void mylog_entry(void *parameter)
 int mylog_init(void)
 {
     rt_err_t result;
-/* 邮箱控制块 */
+
 
     /* 初始化一个 mailbox */
     result = rt_mb_init(&mb,
@@ -91,6 +93,7 @@ int mylog_init(void)
         rt_kprintf("init mailbox failed.\n");
         return -1;
     }
+
     rt_thread_init(&mylog_thread,
                    "mylog_thread",
                    mylog_entry,
@@ -104,4 +107,4 @@ int mylog_init(void)
     return 0;
 }
 
-
+//#endif
