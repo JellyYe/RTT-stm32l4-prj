@@ -36,6 +36,11 @@
 #define PIN_LED_G            39  /* PE8 */
 #define PIN_LED_B            40  /* PE9 */
 		
+// WIRELESS
+#define PIN_NRF_IRQ   84        // PD3 :  NRF_IRQ      --> WIRELESS
+#define PIN_NRF_CE    85        // PD4 :  NRF_CE       --> WIRELESS
+#define PIN_NRF_CS    86        // PD5 :  NRF_CS       --> WIRELESS
+		
 struct pin_index
 {
     int index;

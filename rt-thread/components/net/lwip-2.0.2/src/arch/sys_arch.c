@@ -165,7 +165,7 @@ int lwip_system_init(void)
         return 0;
     }
 
-    eth_system_device_init_private();
+    eth_system_device_init_private();/*rt网络设备层的两个线程初始化*/
 
     /* set default netif to NULL */
     netif_default = RT_NULL;
@@ -179,7 +179,7 @@ int lwip_system_init(void)
         return -1;
     }
 
-    tcpip_init(tcpip_init_done_callback, (void *)&done_sem);
+    tcpip_init(tcpip_init_done_callback, (void *)&done_sem);/*tcpip初始化*/
 
     /* waiting for initialization done */
     if (rt_sem_take(&done_sem, RT_WAITING_FOREVER) != RT_EOK)
