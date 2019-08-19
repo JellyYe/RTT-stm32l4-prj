@@ -836,7 +836,7 @@ rt_err_t enc28j60_attach(const char *spi_device_name)
 
     rt_mutex_init(&enc28j60_dev.lock, "enc28j60", RT_IPC_FLAG_FIFO);
 
-    eth_device_init(&(enc28j60_dev.parent), "e0");
+    eth_device_init(&(enc28j60_dev.parent), "e0");/*×¢²áethÉè±¸*/
 
     return RT_EOK;
 }

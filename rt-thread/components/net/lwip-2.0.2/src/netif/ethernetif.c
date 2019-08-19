@@ -316,7 +316,7 @@ static int netdev_add(struct netif *lwip_netif)
 #endif /* SAL_USING_LWIP */
 
     rt_strncpy(name, lwip_netif->name, LWIP_NETIF_NAME_LEN);
-    result = netdev_register(netdev, name, (void *)lwip_netif);
+    result = netdev_register(netdev, name, (void *)lwip_netif);/*×¢²áÍø¿¨*/
 
 #ifdef RT_LWIP_DHCP
     netdev_low_level_set_dhcp_status(netdev, RT_TRUE);

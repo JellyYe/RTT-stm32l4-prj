@@ -97,6 +97,9 @@
 
 #define RT_USING_DEVICE_IPC
 #define RT_PIPE_BUFSZ 512
+#define RT_USING_SYSTEM_WORKQUEUE
+#define RT_SYSTEM_WORKQUEUE_STACKSIZE 2048
+#define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
@@ -130,6 +133,12 @@
 
 /* Socket abstraction layer */
 
+#define RT_USING_SAL
+
+/* protocol stack implement */
+
+#define SAL_USING_LWIP
+#define SAL_USING_POSIX
 
 /* Network interface device */
 
@@ -197,6 +206,15 @@
 
 /* IoT - internet of things */
 
+#define PKG_USING_PAHOMQTT
+#define PAHOMQTT_PIPE_MODE
+#define PKG_USING_PAHOMQTT_EXAMPLE
+#define RT_PKG_MQTT_THREAD_STACK_SIZE 4096
+#define PKG_PAHOMQTT_SUBSCRIBE_HANDLERS 1
+#define MQTT_DEBUG
+#define PKG_USING_PAHOMQTT_LATEST
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_V102
 
 /* Wi-Fi */
 
@@ -223,22 +241,6 @@
 
 /* system packages */
 
-#define PKG_USING_FAL
-#define FAL_DEBUG_CONFIG
-#define FAL_DEBUG 1
-#define FAL_PART_HAS_TABLE_CFG
-#define FAL_USING_SFUD_PORT
-#define FAL_USING_NOR_FLASH_DEV_NAME "W25Q128"
-#define PKG_USING_FAL_LATEST_VERSION
-#define PKG_FAL_VER_NUM 0x99999
-#define PKG_USING_LITTLEFS
-#define PKG_USING_LITTLEFS_LATEST_VERSION
-#define LFS_READ_SIZE 256
-#define LFS_PROG_SIZE 256
-#define LFS_BLOCK_SIZE 4096
-#define LFS_CACHE_SIZE 256
-#define LFS_BLOCK_CYCLES 0
-#define LFS_LOOKAHEAD_MAX 512
 
 /* peripheral libraries and drivers */
 

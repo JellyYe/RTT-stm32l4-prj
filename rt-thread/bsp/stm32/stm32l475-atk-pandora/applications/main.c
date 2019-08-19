@@ -18,20 +18,22 @@
 #include <stdio.h>
 #include <string.h>
 #include "temp_humi.h"
+#include <limits.h>
+#include <ctype.h>
+#include "cJSON.h"
+#include "mqtt_sample.h"
+/* define MQTT client context */
+static MQTTClient client;
+static int is_started = 0;
+
 /*sensor name*/
 #define TSL4531_SENSOR_NAME	"li_tsl4531"                                    /*  */
 #define AHT10_HUMI_NAME		  "humi_aht10"                                    /*  */
 #define AHT10_TEMP_NAME		  "temp_aht10"                                    /*  */
+
 /*消息队列*/
 #define MQ_BLOCK_SIZE	RT_ALIGN( sizeof(struct tmp_msg), sizeof(intptr_t) )    /* 为了字节对齐,为了提高mcu的读写效率 */
 #define MQ_LEN		(4)
-/*创建缓冲区*/
-#define RINGBUFFERSIZE      (4069)                  /* ringbuffer缓冲区大小 */
-#define THRESHOLD           (RINGBUFFERSIZE / 2)    /* ringbuffer缓冲区阈值 */
-/*事件集*/
-#define WRITE_EVENT         (0x01U << 0)            /* 感兴趣的事件 */
-static rt_event_t recvdata_event;                   /* 事件集 */
-static struct rt_ringbuffer *recvdatabuf;           /* ringbuffer */
 struct tmp_msg
 {
 	rt_tick_t	timestamp;
@@ -39,9 +41,19 @@ struct tmp_msg
 	int		int_value;
 	float		float_value;
 };
+char *jsondata_out;
+static rt_mq_t tmp_msg_mq,jsondata_msg_mq;
 
 
-static rt_mq_t tmp_msg_mq;
+/*创建缓冲区*/
+#define RINGBUFFERSIZE      (4069)                  /* ringbuffer缓冲区大小 */
+#define THRESHOLD           (RINGBUFFERSIZE / 2)    /* ringbuffer缓冲区阈值 */
+
+/*事件集*/
+#define WRITE_EVENT         (0x01U << 0)            /* 感兴趣的事件 */
+static rt_event_t recvdata_event;                   /* 事件集 */
+static struct rt_ringbuffer *recvdatabuf;           /* ringbuffer */
+
 
 
 static void read_lux_entry( void *parameter )
@@ -172,9 +184,9 @@ static void read_temp_humi_entry( void *parameter )
 	}
 }
 
-
 static void send_sensordata_entry( void *parameter )
 {
+	 cJSON * usr;
 	 struct tmp_msg msg;
 	 static char str_data[100];
 
@@ -188,7 +200,18 @@ static void send_sensordata_entry( void *parameter )
 			{
 				if ( strcmp( msg.str_value, TSL4531_SENSOR_NAME ) == RT_EOK )
 				{
-				//	rt_kprintf( "[%s] =%d \n", msg.str_value, msg.int_value );
+					        /*将数据格式化成json格式*/
+        usr=cJSON_CreateObject();   //创建根数据对象
+        cJSON_AddStringToObject(usr,"type",msg.str_value);  //加入键值，加字符串
+        cJSON_AddNumberToObject(usr,"value",msg.int_value);  //加整数   
+        jsondata_out = cJSON_Print(usr);   //将json形式打印成正常字符串形式
+			  rt_mq_send(jsondata_msg_mq, &jsondata_out, sizeof jsondata_out);
+       // rt_kprintf("%s\n",out); 
+        // 释放内存  
+        cJSON_Delete(usr);  
+        free(jsondata_out);
+
+					//rt_kprintf( "[%s] =%d \n", msg.str_value, msg.int_value );
 				}
 
 				if ( strcmp( msg.str_value, AHT10_HUMI_NAME ) == RT_EOK )
@@ -269,19 +292,89 @@ static void save_recv_data_entry(void *parameter)
 
 
 
+static void mqtt_publish_data_entry(void *parameter)
+{
+  MQTTPacket_connectData condata = MQTTPacket_connectData_initializer; /*用MQTTPacket_connectData_initializer默认格式初始化CONNECT消息 */
+    static char cid[20] = { 0 };
+    if (is_started)
+    {
+        LOG_E("mqtt client is already connected.");
+     
+    }
+		
+		/*mqtt客户端配置*/
+    /* config MQTT context param */
+    {
+        client.isconnected = 0;
+        client.uri = MQTT_URI;
 
+        /* generate the random client ID */
+        rt_snprintf(cid, sizeof(cid), "rtthread%d", rt_tick_get());/*产生随机数作为客户端id*/
+        /* config connect param */                                 /*配置conect消息参数*/      
+        memcpy(&client.condata, &condata, sizeof(condata));        
+        client.condata.clientID.cstring = cid;
+        client.condata.keepAliveInterval = 30;/*客户端发起PING Request的时间间隔，确保连接正常*/
+        client.condata.username.cstring = MQTT_USERNAME;
+        client.condata.password.cstring = MQTT_PASSWORD;
+
+        /* config MQTT will param. */
+        client.condata.willFlag = 1;
+        client.condata.will.qos = 1;/*消息的服务质量等级设置*/
+        client.condata.will.retained = 0;/* LWT消息的保留标志（请参阅MQTTAsync_message.retained）*/
+        client.condata.will.topicName.cstring = MQTT_PUBTOPIC;/*主题*/
+        client.condata.will.message.cstring = MQTT_WILLMSG;/*消息*/
+
+        /* malloc buffer. */
+        client.buf_size = client.readbuf_size = 1024;
+        client.buf = rt_calloc(1, client.buf_size);
+        client.readbuf = rt_calloc(1, client.readbuf_size);
+        if (!(client.buf && client.readbuf))
+        {
+            LOG_E("no memory for MQTT client buffer!");
+          
+        }
+
+        /* set event callback function */   /*客户端参数配置，回调函数初始化*/
+        client.connect_callback = mqtt_connect_callback;
+        client.online_callback = mqtt_online_callback;
+        client.offline_callback = mqtt_offline_callback;
+
+        /* set subscribe table and event callback */      /*订阅者订阅参数配置，回调函数初始化*/
+        client.messageHandlers[0].topicFilter = rt_strdup(MQTT_SUBTOPIC);
+        client.messageHandlers[0].callback = mqtt_sub_callback;
+        client.messageHandlers[0].qos = QOS1;
+
+        /* set default subscribe event callback */
+        client.defaultMessageHandler = mqtt_sub_default_callback;
+    }
+
+    /* run mqtt client */
+    paho_mqtt_start(&client);
+    is_started = 1;
+
+	while(1)
+	{
+		if ( rt_mq_recv( jsondata_msg_mq, &jsondata_out, sizeof jsondata_out, RT_WAITING_FOREVER ) == RT_EOK )
+		{
+	   paho_mqtt_publish(&client, QOS1, MQTT_PUBTOPIC, jsondata_out);
+	   rt_thread_mdelay( 1000 );
+		}
+		
+	}
+	 
+}
 
 
 
 int main( void )
 {
 	int		cnt = 0;
-	rt_thread_t	tsl4531_thread, temp_humi_thread,sen_sensor_data_thread,DFS_thread;
+	rt_thread_t	tsl4531_thread, temp_humi_thread,sen_sensor_data_thread,DFS_thread,mqtt_publish_thread;
 	recvdata_event = rt_event_create("temp_evt0", RT_IPC_FLAG_FIFO);
 	RT_ASSERT(recvdata_event);
 	recvdatabuf = rt_ringbuffer_create(RINGBUFFERSIZE); /* ringbuffer的大小是4KB */
 	RT_ASSERT(recvdatabuf);
-	
+	jsondata_msg_mq = rt_mq_create( "jsondata_msg_mq", MQ_BLOCK_SIZE, MQ_LEN, RT_IPC_FLAG_FIFO );/*不知道创建多大的block才合适*/
 	tmp_msg_mq = rt_mq_create( "temp_mq", MQ_BLOCK_SIZE, MQ_LEN, RT_IPC_FLAG_FIFO );
 	/* mylog_init(); */
 
@@ -309,6 +402,7 @@ int main( void )
 	if ( sen_sensor_data_thread != RT_NULL )
 		rt_thread_startup( sen_sensor_data_thread );
 
+	
 	/*文件系统存数据线程*/
 //		DFS_thread = rt_thread_create( "DFSsave",
 //					     save_recv_data_entry,
@@ -317,21 +411,14 @@ int main( void )
 //	if ( DFS_thread != RT_NULL )
 //		rt_thread_startup( DFS_thread );
 //	    extern rt_err_t ping(char* target_name, rt_uint32_t times, rt_size_t size);
-//    
-//    /* 等待网络连接成功 */
-//    rt_thread_mdelay(500);
-//    
-//    while(1)
-//    {
-//        if(ping("www.rt-thread.org", 4, 0) != RT_EOK)
-//        {
-//            rt_thread_mdelay(5000);
-//        }
-//        else
-//        {
-//            break;
-//        }
-//    }
+ 
+/*mqtt 发布消息线程*/
+	mqtt_publish_thread = rt_thread_create( "mqtt_publishu_data",
+					     mqtt_publish_data_entry,
+					     RT_NULL,
+					     1024, 6, 10 );
+	if ( mqtt_publish_thread != RT_NULL )
+		rt_thread_startup( mqtt_publish_thread );
 	
 	led_blink();
 	    
