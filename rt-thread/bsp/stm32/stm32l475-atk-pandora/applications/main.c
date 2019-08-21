@@ -413,12 +413,12 @@ int main( void )
 //	    extern rt_err_t ping(char* target_name, rt_uint32_t times, rt_size_t size);
  
 /*mqtt 发布消息线程*/
-	mqtt_publish_thread = rt_thread_create( "mqtt_publishu_data",
-					     mqtt_publish_data_entry,
-					     RT_NULL,
-					     1024, 6, 10 );
-	if ( mqtt_publish_thread != RT_NULL )
-		rt_thread_startup( mqtt_publish_thread );
+//	mqtt_publish_thread = rt_thread_create( "mqtt_publishu_data",
+//					     mqtt_publish_data_entry,
+//					     RT_NULL,
+//					     1024, 6, 10 );
+//	if ( mqtt_publish_thread != RT_NULL )
+//		rt_thread_startup( mqtt_publish_thread );
 	
 	led_blink();
 	    
